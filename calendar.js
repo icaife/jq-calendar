@@ -74,6 +74,9 @@ $(function() {
 				skipDate: new Date(2015, 5, 28), //哪些日期不能选
 				onDayBuild: false, //每创建一天调用  day : 参数为当天，args : {focus : true|false,inRange : true|false,date : xxx}
 				onBuildEnd: false, //创建完毕调用
+				onSelect: function() {},
+				onShow: function() {},
+				onClose: function() {},
 				dayFormater: false, //日期格式化 每创建一天会调用，返回的参数为 day {focus : true|false,inRange : true|false,date : xxx} focus当前日期是否被自动选中，inRange 当前日期是否在minDate ~ maxDate之间
 				dateFormat: "yyyy-mm-dd", //日期格式
 				maxDate: new Date(2099, 11, 31), //最大可选日期
@@ -300,7 +303,7 @@ $(function() {
 					if (dayFormater) {
 						str += (dayFormater && dayFormater(i, args));
 					} else {
-						str += "<li class=\"d-item" + (args.focus ? " d-hover" : "") + (args.inRange ? args.skip ? " d-dis" : "" : " d-dis") + "\">" + i + "</li>";
+						str += "<li data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" class=\"d-item" + (args.focus ? " d-hover" : "") + (args.inRange ? args.skip ? " d-dis" : "" : " d-dis") + "\">" + i + "</li>";
 					}
 					void(onDayBuild && onDayBuild.call(that, i, args));
 				}
