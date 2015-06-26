@@ -84,7 +84,9 @@ $(function() {
 				minDate: new Date(), //最小可选日期
 				selectOutOfRange: false, //不在minDate 和 maxDate 之间的日期是否可选择  true : 可选， false : 不可选
 				changeOption: false, //改变参数的函数 传入参数  key  value
-				cache: false //生成的月份内容 缓存开关  true : 开启  false : 关闭
+				cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
+				element: $(".tff-cal-input"), //绑定的元素
+				eventType: "click" //触发的日历的事件类型
 			};
 			var that = this;
 			var params = $.extend({}, cfgs, options);
@@ -103,8 +105,8 @@ $(function() {
 			var m = date.month;
 			var d = date.day;
 			var dom = that.buildContent(y, m, d);
-			var onSelect = params.onSelect;
 			$(".c-wraper").html(dom);
+			var onSelect = params.onSelect;
 
 			//左右按钮事件
 			var container = $(params.container);
@@ -127,7 +129,7 @@ $(function() {
 				);
 				// console.log(m);
 				container.find(".c-wraper").html(dom);
-			}).on("click", ".d-item", function() {
+			}).on("click", ".d-item", function() { //日期选择事件
 				var _this = $(this);
 				if (_this.is(".d-dis") || _this.is(".d-none")) {
 					return false;
@@ -138,9 +140,18 @@ $(function() {
 					day: +_this.data("day"),
 					week: +_this.data("week")
 				};
-				void(onSelect && onSelect.call(this, that.format(date), date));
+				var fmtDate = that.format(date);
+				params.element.val(fmtDate);
+				console.log(fmtDate);
+				void(onSelect && onSelect.call(this, fmtDate, date));
 			});
-			//选择 天
+
+			//触发日历显示
+			params.element.on(params.eventType, function() {
+				that.show();
+			}).on("blur", function() {
+				// that.hide();
+			});
 		},
 		/**
 		 * 从字符串中获取时间
@@ -402,14 +413,33 @@ $(function() {
 				return d >= min && d <= max;
 			}
 		},
-		// lang: tffCalLang[clientInfo.lang || "cn"],
+		//显示日历
+		show: function() {
+			$(this.config.container).show();
+		},
+		//隐藏日历
+		hide: function() {
+			$(this.config.container).hide();
+		},
 		cache: {} //
 	};
 
-	window.tffcal = tffcal;
-	tffcal.init({
+	$.fn.tffCal = function() {
+		return this.each(function(options) {
+			options = options || {};
+			options.element = $(this);
+			tffcal.init(options);
+		});
+	};
+
+	$(".tff-cal-input").tffCal({
 		onSelect: function() {
 			console.log(arguments);
 		}
 	});
+	// tffcal.init({
+	// 	onSelect: function() {
+	// 		console.log(arguments);
+	// 	}
+	// });
 });
