@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CALENDAR-DEV</title>
+    <!-- <link rel="stylesheet" href="http://cn.toursforfun.com/style/base.css"> -->
+    <script src="./jq.js"></script>
+    <script src="./calendar.js"></script>
+    <style>
+    *{
+        margin: 0;padding: 0;
+
+    }
+    ul{
+        list-style: none;
+    }
+    body {
+        background: #ddd;
+        font-size: 62.5%;
+        font-family: 'Microsoft Yahei';
+    }
+    a{
+        text-decoration: none;
+        color:#666;
+    }
+    /*日历*/
+    
+    .tff-cal {
+        width: 650px;
+        height: 347px;
+        border: 1px solid #ccc;
+        margin-left: -310px;
+        margin-top: -173px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        background: #fff;
+    }
+
+    /*top bar*/
+    .c-bar{
+        width: 100%;
+        /*overflow: hidden;*/
+        top:50%;
+        position: absolute;
+    }
+    .c-bar .b-arrow{
+        width: 14px;
+        height: 22px;
+        line-height: 22px;
+        display: inline-block;
+        margin-top: -11px;
+        background: #ddd;
+        text-decoration:none;
+        text-align:center;
+        font-family: initial;
+    }
+    .c-bar .b-arrow:hover{
+        color: #fff;
+        background: #3e99dc;
+    }
+    .c-bar .b-prev {
+        float: left;
+    }
+    .c-bar .b-next{
+        float: right;
+    }
+    /*content box*/
+    .tff-cal .c-box{
+        width: 620px;
+        margin: auto;
+        overflow: hidden;
+    }
+    .c-wraper{
+        width: 600%;
+    }
+    /*月*/
+    .tff-cal .c-month{
+        /*width: 281px;*/
+        width: 280px;
+        margin: 0 15px;
+        float: left;
+    }
+    .c-month .m-year{
+        height: 35px;
+        line-height: 35px;
+        text-align: center;
+        font-size: 15px;
+    }
+    .c-month .m-week{
+        overflow: hidden;
+    }
+    .c-month .w-wkend{
+        color:#f60;
+    }
+    .m-week .w-item{
+        width: 39px;
+        height: 25px;
+        padding-left: 1px;
+        line-height: 25px;
+        float: left;
+        text-align: center;
+        background: #fff;
+    }
+
+    /*日*/
+    .m-day{
+/*        border-left: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;*/
+        /*border:1px solid #ddd;*/
+        /*overflow: hidden;*/
+    }
+
+    .m-day .d-item{
+        width: 39px;
+        height: 39px;
+        line-height: 39px;
+        margin-right: -1px;
+        margin-top: -1px;
+/*        border-top:1px solid #ddd;
+        border-right:1px solid #ddd;*/
+        border:1px solid #ddd;
+        float: left;
+        text-align: center;
+        /*margin: -1px;*/
+
+    }
+    .m-day .d-item:hover,.m-day .d-hover{
+        background-color:#3e99dc;
+        border-color: #3e99dc;
+        color: #fff;
+        cursor: pointer;
+    }
+    .m-day .d-dis{
+        cursor: not-allowed!important;
+        color: #999!important;
+        background: none!important;
+        border-color: #ddd!important;
+        -webkit-user-select: none;  /* Chrome all / Safari all */
+        -moz-user-select: none;     /* Firefox all */
+        -ms-user-select: none;      /* IE 10+ */
+
+        /* No support for these yet, use at own risk */
+        -o-user-select: none;
+        user-select: none;
+    }
+    .m-day .d-none{
+        cursor: default!important;
+        background: none!important;
+        border-color: #ddd!important;
+    }
+
+    /*底部*/
+    .tff-cal .c-op{
+        margin-left: 30px;
+        margin-top: 10px;
+    }
+    .c-op .o-item{
+        width: 51px;
+        height: 22px;
+        margin-right: 5px;
+        line-height: 22px;
+        border:1px solid #9e9e9e;
+        display: inline-block;
+        text-align: center;
+    }
+    .c-op .o-item:hover{
+        text-decoration: none;
+        background-color:#3e99dc;
+        border-color: #3e99dc;
+        color: #fff;
+    }
+    </style>
+    <script>
+    window.CLIENTSTATUS = {
+        lang: "cn"
+    };
+    </script>
+</head>
+
+<body>
+    <div class="tff-cal">
+        <div class="c-bar">
+            <a href="javascript:void(0);" class="b-arrow b-prev tff-prev">&lt;</a>
+            <a href="javascript:void(0);" class="b-arrow b-next tff-next">&gt;</a>
+        </div>
+        <div class="c-box">
+            <div class="c-wraper">
+                <div class="c-month" style="visibility:hidden">
+                    <div class="m-year">
+                            <b>2015年6月</b>
+                    </div>
+                    <ul class="m-week">
+                        <li class="w-item w-wkend">日</li>
+                        <li class="w-item">一</li>
+                        <li class="w-item">二</li>
+                        <li class="w-item">三</li>
+                        <li class="w-item">四</li>
+                        <li class="w-item">五</li>
+                        <li class="w-item w-wkend">六</li>
+                    </ul>
+                    <ul class="m-day">
+                        <li class="d-item d-dis">1</li>
+                        <li class="d-item d-dis">2</li>
+                        <li class="d-item">3</li>
+                        <li class="d-item">4</li>
+                        <li class="d-item">5</li>
+                        <li class="d-item">6</li>
+                        <li class="d-item">7</li>
+                        <li class="d-item">8</li>
+                        <li class="d-item">9</li>
+                        <li class="d-item">10</li>
+                        <li class="d-item">11</li>
+                        <li class="d-item">12</li>
+                        <li class="d-item">13</li>
+                        <li class="d-item">14</li>
+                        <li class="d-item">15</li>
+                        <li class="d-item">16</li>
+                        <li class="d-item">17</li>
+                        <li class="d-item">18</li>
+                        <li class="d-item">19</li>
+                        <li class="d-item">20</li>
+                        <li class="d-item">21</li>
+                        <li class="d-item">22</li>
+                        <li class="d-item">23</li>
+                        <li class="d-item">24</li>
+                        <li class="d-item">25</li>
+                        <li class="d-item">26</li>
+                        <li class="d-item">27</li>
+                        <li class="d-item">28</li>
+                        <li class="d-item">29</li>
+                        <li class="d-item">30</li>
+                        <li class="d-item">31</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                    </ul>
+                </div>
+                <div class="c-month" style="visibility:hidden">
+                    <div class="m-year">
+                            <b>2015年7月</b>
+                    </div>
+                    <ul class="m-week">
+                        <li class="w-item">一</li>
+                        <li class="w-item">二</li>
+                        <li class="w-item">三</li>
+                        <li class="w-item">四</li>
+                        <li class="w-item">五</li>
+                        <li class="w-item w-wkend">六</li>
+                        <li class="w-item w-wkend">日</li>
+                    </ul>
+                    <ul class="m-day">
+                        <li class="d-item d-dis">1</li>
+                        <li class="d-item d-dis">2</li>
+                        <li class="d-item">3</li>
+                        <li class="d-item">4</li>
+                        <li class="d-item">5</li>
+                        <li class="d-item">6</li>
+                        <li class="d-item">7</li>
+                        <li class="d-item">8</li>
+                        <li class="d-item">9</li>
+                        <li class="d-item">10</li>
+                        <li class="d-item">11</li>
+                        <li class="d-item">12</li>
+                        <li class="d-item">13</li>
+                        <li class="d-item">14</li>
+                        <li class="d-item">15</li>
+                        <li class="d-item">16</li>
+                        <li class="d-item">17</li>
+                        <li class="d-item">18</li>
+                        <li class="d-item">19</li>
+                        <li class="d-item">20</li>
+                        <li class="d-item">21</li>
+                        <li class="d-item">22</li>
+                        <li class="d-item">23</li>
+                        <li class="d-item">24</li>
+                        <li class="d-item">25</li>
+                        <li class="d-item">26</li>
+                        <li class="d-item">27</li>
+                        <li class="d-item">28</li>
+                        <li class="d-item">29</li>
+                        <li class="d-item">30</li>
+                        <li class="d-item">31</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                        <li class="d-item d-none">&nbsp;</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="c-op">
+            <a class="o-item" href="javascript:void(0);">1周之内</a><a class="o-item" href="javascript:void(0);">1个月内</a><a class="o-item" href="javascript:void(0);">三个月内</a><a class="o-item" href="javascript:void(0);">半年内</a>
+        </div>
+    </div>
+</body>
+
+</html>
