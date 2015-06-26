@@ -2,6 +2,7 @@
  * @author Leon
  * @description 酒店日历控件V1.0
  * @date 2015年6月26日 
+ * @ps 全部月份统一成 0 开始，只有format函数 出来是真实的月份，即 月份从0开始
  */
 
 /*global $,console*/
@@ -74,9 +75,9 @@ $(function() {
 				skipDate: new Date(2015, 5, 28), //哪些日期不能选
 				onDayBuild: false, //每创建一天调用  day : 参数为当天，args : {focus : true|false,inRange : true|false,date : xxx}
 				onBuildEnd: false, //创建完毕调用
-				onSelect: function() {},
-				onShow: function() {},
-				onClose: function() {},
+				onSelect: false,
+				onShow: false,
+				onClose: false,
 				dayFormater: false, //日期格式化 每创建一天会调用，返回的参数为 day {focus : true|false,inRange : true|false,date : xxx} focus当前日期是否被自动选中，inRange 当前日期是否在minDate ~ maxDate之间
 				dateFormat: "yyyy-mm-dd", //日期格式
 				maxDate: new Date(2099, 11, 31), //最大可选日期
@@ -102,19 +103,20 @@ $(function() {
 			var m = date.month;
 			var d = date.day;
 			var dom = that.buildContent(y, m, d);
+			var onSelect = params.onSelect;
 			$(".c-wraper").html(dom);
 
 			//左右按钮事件
-			$(params.next).on("click", function() {
+			var container = $(params.container);
+			container.on("click", params.next, function() {
 				dom = that.buildContent(
 					that.getNextMonth({
 						year: y,
 						month: m++
 					})
 				);
-				$(".c-wraper").html(dom);
-			});
-			$(params.prev).on("click", function() {
+				container.find(".c-wraper").html(dom);
+			}).on("click", params.prev, function() {
 				dom = that.buildContent(
 					that.getPrevMonth({
 						year: y,
@@ -124,8 +126,21 @@ $(function() {
 					})
 				);
 				// console.log(m);
-				$(".c-wraper").html(dom);
+				container.find(".c-wraper").html(dom);
+			}).on("click", ".d-item", function() {
+				var _this = $(this);
+				if (_this.is(".d-dis") || _this.is(".d-none")) {
+					return false;
+				}
+				var date = {
+					year: +_this.data("year"),
+					month: +_this.data("month"),
+					day: +_this.data("day"),
+					week: +_this.data("week")
+				};
+				void(onSelect && onSelect.call(this, that.format(date), date));
 			});
+			//选择 天
 		},
 		/**
 		 * 从字符串中获取时间
@@ -192,13 +207,13 @@ $(function() {
 		},
 		/**
 		 * 格式化日期
-		 * @param  {Date}     date    原生日期
+		 * @param  {Date|Object}     date    原生日期 或者字面量 也可以
 		 * @param  {String}   fmt     日期格式  yyyy  年  m 月  d 日
-		 * @return {String}           日期字符串
+		 * @return {String}           返回真实的时间字符串  从月份 1 开始
 		 */
 		format: function(date, fmt) {
-			date = date instanceof Date ? date : new Date();
-			fmt = fmt || "yyyy-mm-dd";
+			date = date instanceof Date ? date : new Date(date.year | 0, date.month | 0, date.day | 0);
+			fmt = fmt || this.config.dateFormat || "yyyy-mm-dd";
 			var y = date.getFullYear(),
 				m = date.getMonth(),
 				d = date.getDate(),
@@ -206,7 +221,7 @@ $(function() {
 					if (/y+/g.test(tmp)) {
 						return y;
 					}
-					var f = /m+/g.test(tmp) ? m : /d+/g.test(tmp) ? d : 0;
+					var f = /m+/g.test(tmp) ? m + 1 : /d+/g.test(tmp) ? d : 0;
 					return tmp.length > 1 ? ("00".slice((f + "").length) + f) : f;
 				});
 			return str;
@@ -303,7 +318,7 @@ $(function() {
 					if (dayFormater) {
 						str += (dayFormater && dayFormater(i, args));
 					} else {
-						str += "<li data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" class=\"d-item" + (args.focus ? " d-hover" : "") + (args.inRange ? args.skip ? " d-dis" : "" : " d-dis") + "\">" + i + "</li>";
+						str += "<li data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" data-month=\"" + args.date.month + "\" data-year=\"" + args.date.year + "\" class=\"d-item" + (args.focus ? " d-hover" : "") + (args.inRange ? args.skip ? " d-dis" : "" : " d-dis") + "\">" + i + "</li>";
 					}
 					void(onDayBuild && onDayBuild.call(that, i, args));
 				}
@@ -392,5 +407,9 @@ $(function() {
 	};
 
 	window.tffcal = tffcal;
-	tffcal.init();
+	tffcal.init({
+		onSelect: function() {
+			console.log(arguments);
+		}
+	});
 });
