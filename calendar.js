@@ -3,6 +3,7 @@
  * @description 酒店日历控件V1.0
  * @date 2015年6月26日 
  * @ps 全部月份统一成 0 开始，只有format函数 出来是真实的月份，即 月份从0开始
+ * 全局只有一个calendar
  */
 
 /*global $,console*/
@@ -65,93 +66,112 @@ $(function() {
 
 	var tffcal = {
 		init: function(options) {
-			var cfgs = {
-				container: ".tff-cal", //日历容器
-				prev: ".tff-prev", //上一月按钮
-				next: ".tff-next", //下一月按钮
-				lang: "cn", //语言
-				showMonths: 2, //默认显示几个月
-				focusDate: [new Date(2015, 5, 30)], //日历打开时 自动选择的日期，(月份为 当前月份，数组的第一个月份)  也可以传数组，focus多个时间 也可以传String,也可以传字面量{year : 2015,month : 6 ,day : 25} 数组也可以传哦,
-				skipDate: new Date(2015, 5, 28), //哪些日期不能选
-				onDayBuild: false, //每创建一天调用  day : 参数为当天，args : {focus : true|false,inRange : true|false,date : xxx}
-				onBuildEnd: false, //创建完毕调用
-				onSelect: false,
-				onShow: false,
-				onClose: false,
-				dayFormater: false, //日期格式化 每创建一天会调用，返回的参数为 day {focus : true|false,inRange : true|false,date : xxx} focus当前日期是否被自动选中，inRange 当前日期是否在minDate ~ maxDate之间
-				dateFormat: "yyyy-mm-dd", //日期格式
-				maxDate: new Date(2099, 11, 31), //最大可选日期
-				minDate: new Date(), //最小可选日期
-				selectOutOfRange: false, //不在minDate 和 maxDate 之间的日期是否可选择  true : 可选， false : 不可选
-				changeOption: false, //改变参数的函数 传入参数  key  value
-				cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
-				element: $(".tff-cal-input"), //绑定的元素
-				eventType: "click" //触发的日历的事件类型
-			};
 			var that = this;
+			var cfgs = that.defaults;
 			var params = $.extend({}, cfgs, options);
-			this.config = params;
-
-			that.bindEvents();
+			that.config = params;
+			params.bindDom.data("tff_cal_index", this.elements.length); //给予下标
+			that.elements.push({ //push进去
+				el: params.bindDom,
+				cfgs: params
+			}); //将元素加到elements
+			that.bindEvents(); //绑定事件
+			return true;
 		},
 		/**
 		 * 绑定事件
 		 */
 		bindEvents: function() {
 			var that = this;
-			var params = this.config;
-			var date = that.getDate($.isArray(params.focusDate) ? params.focusDate[0] : params.focusDate);
-			var y = date.year;
-			var m = date.month;
-			var d = date.day;
-			var dom = that.buildContent(y, m, d);
-			$(".c-wraper").html(dom);
-			var onSelect = params.onSelect;
 
-			//左右按钮事件
-			var container = $(params.container);
-			container.on("click", params.next, function() {
-				dom = that.buildContent(
-					that.getNextMonth({
-						year: y,
-						month: m++
-					})
-				);
-				container.find(".c-wraper").html(dom);
-			}).on("click", params.prev, function() {
-				dom = that.buildContent(
-					that.getPrevMonth({
-						year: y,
-						month: m--
-					}, undefined, {
-						__mode: -1
-					})
-				);
-				// console.log(m);
-				container.find(".c-wraper").html(dom);
-			}).on("click", ".d-item", function() { //日期选择事件
-				var _this = $(this);
-				if (_this.is(".d-dis") || _this.is(".d-none")) {
-					return false;
-				}
-				var date = {
-					year: +_this.data("year"),
-					month: +_this.data("month"),
-					day: +_this.data("day"),
-					week: +_this.data("week")
-				};
-				var fmtDate = that.format(date);
-				params.element.val(fmtDate);
-				console.log(fmtDate);
-				void(onSelect && onSelect.call(this, fmtDate, date));
-			});
+			if (that.elements.length === 1) { //日历里面的事件只绑定一次
+				//左右按钮事件
+				var container = $(".tff-cal");
+				container.on("click", ".tff-next", function() {
+					var _el = that.elements[that.__curElementIndex];
+					_buildContent("next", _el.cfgs);
+				}).on("click", ".tff-prev", function() {
+					var _el = that.elements[that.__curElementIndex];
+					_buildContent("prev", _el.cfgs);
+				}).on("click", ".d-item", function() { //日期选择事件
+					var _this = $(this);
+					if (_this.is(".d-dis") || _this.is(".d-none")) {
+						return false;
+					}
+					var _el = that.elements[that.__curElementIndex];
+					container.find(".d-selected").removeClass("d-selected");
+					_this.addClass("d-selected");
+					var date = {
+						year: +_this.data("year"),
+						month: +_this.data("month"),
+						day: +_this.data("day"),
+						week: +_this.data("week"),
+					};
+					date.__year = date.year; //用于存储当前显示的月份，在左右切换月份的时候有用。
+					date.__month = date.month;
+					var fmtDate = that.format(date);
+					_el.cfgs.selectedDate = date;
+					console.log(date);
+					_el.el.val(fmtDate);
+					// _el.focusDate = date;
+					void(_el.cfgs.onSelect && _el.cfgs.onSelect.call(_el.el, fmtDate, date));
+					that.hide();
+				}).on("mouseenter", ".d-item", function() {
+					var _this = $(this);
+					if (_this.is(".d-dis") || _this.is(".d-none")) {
+						return false;
+					}
+					var _el = that.elements[that.__curElementIndex];
+					_this.prevAll(".d-item").not(".d-none").not(".d-dis").addClass("d-during").removeClass("d-selected");
+					_this.nextAll(".d-item").removeClass("d-during d-selected");
+					console.log(_this.nextAll(".d-item").hasClass("d-selected"));
+
+				});
+			}
+
 
 			//触发日历显示
-			params.element.on(params.eventType, function() {
-				that.show();
+			var els = that.elements;
+			var el = els[els.length - 1];
+			el.el.on(el.cfgs.eventType, function() {
+				var _index = $(this).data("tff_cal_index");
+				that.__curElementIndex = _index; //当前点击的控件下标
+				_buildContent("cur", that.elements[_index].cfgs);
+				that.show(); //显示日历
 			}).on("blur", function() {
 				// that.hide();
 			});
+
+			function _buildContent(type, o) { //type: next 为下一个月  prev为上一个月   其余则为当月
+				var params = o;
+				// var date = that.getDate($.isArray(params.s) ? params.focusDate[0] : params.focusDate);
+				var selectedDate = params.selectedDate;
+				var date = that.getDate(selectedDate);
+				selectedDate.__year = selectedDate.__year || date.year;
+				selectedDate.__month = selectedDate.__month === 0 ? 0 : (selectedDate.__month || date.month);
+
+				var domStr = "";
+
+				if (type === "next") { //下个月
+					domStr = that.buildContent(that.getNextMonth({
+						year: selectedDate.__year,
+						month: selectedDate.__month++
+					}), undefined, params);
+					console.log(params);
+				} else if (type === "prev") { //上个月
+					domStr = that.buildContent(that.getPrevMonth({
+						year: selectedDate.__year,
+						month: selectedDate.__month--
+					}), undefined, $.extend({}, params, {
+						__mode: -1
+					}));
+				} else { //当前月份
+					domStr = that.buildContent(date.year, date.month, params);
+				}
+
+				$(".tff-cal .c-wraper").html(domStr);
+				return domStr;
+			}
 		},
 		/**
 		 * 从字符串中获取时间
@@ -224,7 +244,7 @@ $(function() {
 		 */
 		format: function(date, fmt) {
 			date = date instanceof Date ? date : new Date(date.year | 0, date.month | 0, date.day | 0);
-			fmt = fmt || this.config.dateFormat || "yyyy-mm-dd";
+			fmt = fmt || this.defaults.dateFormat || "yyyy-mm-dd";
 			var y = date.getFullYear(),
 				m = date.getMonth(),
 				d = date.getDate(),
@@ -285,17 +305,20 @@ $(function() {
 		 */
 		buildContent: function(y, m, args) {
 			var that = this;
-			var cfg = $.extend({}, that.config, args);
+			var cfg = $.extend({}, that.defaults, args);
 			var lang = cfg.lang;
 			var weeks = tffCalLang[lang].weeks;
 			var onDayBuild = (typeof cfg.onDayBuild === "function") ? cfg.onDayBuild : false;
 			var focusDate = cfg.focusDate; //获得焦点的日期
 			var skipDate = cfg.skipDate; //哪些日期不能选
+			var selectedDate = cfg.selectedDate; //选中日期
 			var dayFormater = cfg.dayFormater; //dat format
 			var minDate = cfg.minDate; //最小可选日期
 			var maxDate = cfg.maxDate; //最大可选日期
 			var showMonths = cfg.showMonths || 1; //一次生成几个月
 			var mode = cfg.__mode || 1; //大于0 为获取下一个月的，小于0 为 获取上一个月
+
+			console.log(args);
 
 			function genEmpty(n, t) {
 				var str = "";
@@ -320,16 +343,18 @@ $(function() {
 						focus: that.dateEqual(tmp, focusDate),
 						inRange: that.inRange(tmp, minDate, maxDate),
 						skip: that.dateEqual(tmp, skipDate),
+						selected: that.dateEqual(tmp, selectedDate),
 						date: that.getDate({
 							year: y,
 							month: m,
 							day: i
 						})
 					};
+
 					if (dayFormater) {
 						str += (dayFormater && dayFormater(i, args));
 					} else {
-						str += "<li data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" data-month=\"" + args.date.month + "\" data-year=\"" + args.date.year + "\" class=\"d-item" + (args.focus ? " d-hover" : "") + (args.inRange ? args.skip ? " d-dis" : "" : " d-dis") + "\">" + i + "</li>";
+						str += "<li data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" data-month=\"" + args.date.month + "\" data-year=\"" + args.date.year + "\" class=\"d-item" + (args.focus ? " d-focus" : "") + (args.inRange ? (args.skip ? " d-dis" : (args.selected ? " d-selected" : "")) : " d-dis") + "\">" + "<span class=\"d-wraper\">" + i + "</span>" + "</li>";
 					}
 					void(onDayBuild && onDayBuild.call(that, i, args));
 				}
@@ -395,8 +420,9 @@ $(function() {
 		 * @return {Boolean}                                      true : 在时间段内，false : 不在时间段内
 		 */
 		inRange: function(date, minDate, maxDate) {
-			minDate = minDate || this.config.minDate;
-			maxDate = maxDate || this.config.maxDate;
+			minDate = minDate || this.defaults.minDate;
+			maxDate = maxDate || this.defaults.maxDate;
+
 			if (date instanceof Array) {
 				var flag = true;
 				for (var i = 0; i < date.length; i++) {
@@ -415,31 +441,78 @@ $(function() {
 		},
 		//显示日历
 		show: function() {
-			$(this.config.container).show();
+			$(this.defaults.container).show();
 		},
 		//隐藏日历
 		hide: function() {
-			$(this.config.container).hide();
+			$(this.defaults.container).hide();
 		},
-		cache: {} //
+		cache: {},
+		elements: [], //绑定的元素
+		defaults: {
+			container: ".tff-cal", //日历容器
+			prev: ".tff-prev", //上一月按钮
+			next: ".tff-next", //下一月按钮
+			lang: "cn", //语言
+			showMonths: 2, //默认显示几个月
+			focusDate: [new Date()], //日历打开时 focus的时间，类似“今天”，(月份为 当前月份，数组的第一个月份)  也可以传数组，focus多个时间 也可以传String,也可以传字面量{year : 2015,month : 6 ,day : 25} 数组也可以传。
+			skipDate: [], //哪些日期不能选
+			selectedDate: new Date(), //初始已选中的日期 ,也可以传字面量日期，原生日期，数组
+			onDayBuild: false, //每创建一天调用  day : 参数为当天，args : {focus : true|false,inRange : true|false,date : xxx}
+			onBuildEnd: false, //创建完毕调用
+			onSelect: false,
+			onShow: false,
+			onClose: false,
+			dayFormater: false, //日期格式化 每创建一天会调用，返回的参数为 day {focus : true|false,inRange : true|false,date : xxx} focus当前日期是否被自动选中，inRange 当前日期是否在minDate ~ maxDate之间
+			dateFormat: "yyyy-mm-dd", //日期格式
+			maxDate: new Date(2099, 11, 31), //最大可选日期
+			minDate: new Date(), //最小可选日期
+			selectOutOfRange: false, //不在minDate 和 maxDate 之间的日期是否可选择  true : 可选， false : 不可选
+			changeOption: false, //改变参数的函数 传入参数  key  value
+			cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
+			bindDom: $(".tff-cal-input"), //绑定的元素
+			eventType: "click", //触发的日历的事件类型
+			langLab: tffCalLang
+		}
 	};
 
 	$.fn.tffCal = function() {
-		return this.each(function(options) {
-			options = options || {};
-			options.element = $(this);
-			tffcal.init(options);
+		var args = arguments;
+		return this.each(function() {
+			if (typeof args[0] === "string") {
+				var method = tffcal[args[0]];
+				if ($.isFunction(method)) {
+					method.apply(tffcal, [].slice.call(args, 1));
+				} else if (args[0] === "changeOption") {
+					var _index = $(this).data("tff_cal_index");
+					var _el = tffcal.elements[_index];
+					if ($.isPlainObject(args[1])) {
+						_el.cfgs = $.extend({}, _el.cfgs, args[1]);
+					}
+				}
+			} else {
+				var options = args[0] || {};
+				options.bindDom = $(this);
+				tffcal.init(options);
+			}
 		});
 	};
 
-	$(".tff-cal-input").tffCal({
+	$.fn.tffCal.tool = tffcal;
+
+	$(".cal-start").tffCal({
 		onSelect: function() {
-			console.log(arguments);
+			console.log("start date selected!");
 		}
 	});
-	// tffcal.init({
-	// 	onSelect: function() {
-	// 		console.log(arguments);
-	// 	}
+	var x = $(".cal-end").tffCal({
+		onSelect: function() {
+			console.log("end date selected!");
+		}
+	});
+	console.log(x);
+	// $(".tff-cal-input").eq(1).tffCal("changeOption", {
+	// 	minDate: new Date(2015, 8, 9)
 	// });
+
 });
