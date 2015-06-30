@@ -126,15 +126,8 @@ $(function() {
 						return false;
 					}
 					that.__curElementIndex = _index; //当前点击的控件下标
-					var input = that.elements[_index];
-					_buildContent("cur", that.elements[_index].cfgs);
 
-					if (input.cfgs.__endTo || input.cfgs.__startFrom) {
-						var cfgs = input.cfgs;
-						cfgs.__endTo ?
-							_genDuration(cfgs.selectedDate, cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, input.dayDoms) :
-							_genDuration(cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, cfgs.selectedDate, input.dayDoms);
-					}
+					_buildContent("cur", that.elements[_index].cfgs);
 
 					that.show(); //显示日历
 				})
@@ -196,6 +189,16 @@ $(function() {
 					.find(".d-item")
 					.not(".d-none")
 					.not(".d-dis");
+
+				var input = that.elements[that.__curElementIndex];
+
+				if (input.cfgs.__endTo || input.cfgs.__startFrom) {
+					var cfgs = input.cfgs;
+					cfgs.__endTo ?
+						_genDuration(cfgs.selectedDate, cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, input.dayDoms) :
+						_genDuration(cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, cfgs.selectedDate, input.dayDoms);
+				}
+
 				return domStr;
 			}
 
