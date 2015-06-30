@@ -76,17 +76,19 @@ $(function() {
 						var _el = that.elements[that.__curElementIndex];
 
 						_el.dayDoms.filter(".d-selected")
+							.not(_el.cfgs.__endTo ? ".d-end" : _el.cfgs.__startFrom ? ".d-start" : "")
 							.removeClass("d-selected");
-
 						_this.addClass("d-selected");
 						var date = that.getDate({
 							year: +_this.data("year"),
 							month: +_this.data("month"),
 							day: +_this.data("day")
 						});
+
 						date.week = +_this.data("week");
 						date.__year = date.year; //用于存储当前显示的月份，在左右切换月份的时候有用。
 						date.__month = date.month;
+
 						var fmtDate = that.format(date);
 						_el.cfgs.selectedDate = date;
 						// console.log(date);
@@ -103,31 +105,31 @@ $(function() {
 						if (_this.is(".d-dis") || _this.is(".d-none")) {
 							return false;
 						}
-						_createDuring(_this);
+						var input = that.elements[that.__curElementIndex];
+						var date = _this.data("date");
+						if (input.cfgs.__endTo) { //开始
+							_genDuration(date, input.cfgs.__endTo.cfgs.selectedDate, input.dayDoms);
+						} else if (input.cfgs.__startFrom) { //结束
+							_genDuration(input.cfgs.__startFrom.cfgs.selectedDate, date, input.dayDoms);
+						}
 					})
 					.on("mouseleave", ".m-day", function() {
 						console.log("day leave.");
 					});
 			}
 
-			//开始时间和结束时间之间的。
-			function _createDuring(dayItemDom) {
-				var input = that.elements[that.__curElementIndex]; //拿到当前的input
-				var domMonth = dayItemDom.data("month");
-				var month = input.cfgs.selectedDate.month;
-				var dayDoms = input.dayDoms;
-				var _curDate = dayItemDom.data("date");
-				var _curIndex = -1;
+			function _genDuration(startDate, endDate, dayDoms) {
+				dayDoms = dayDoms || that.elements[that.__curElementIndex].dayDoms;
 
-				if (input.cfgs.__endTo || input.cfgs.__startFrom) { //开始时间
-					for (var i = 0, len = dayDoms.length; i < len; i++) {
-						var _curDom = dayDoms.eq(i);
-						if (_curIndex >= 0 || _curDom.data("date") === _curDate) {
-							_curDom[input.cfgs.__endTo ? "addClass" : "removeClass"]("d-during");
-							_curIndex = i;
-						} else {
-							_curDom[input.cfgs.__endTo ? "removeClass" : "addClass"]("d-during");
-						}
+				for (var i = 0, len = dayDoms.length; i < len; i++) {
+					var _curDom = dayDoms.eq(i);
+					var _curDate = _curDom.data("date");
+					switch (that.dateCompare(_curDate, startDate) + that.dateCompare(endDate, _curDate)) {
+						case 2:
+							_curDom.addClass("d-during");
+							break;
+						default:
+							_curDom.removeClass("d-during");
 					}
 				}
 			}
@@ -167,7 +169,7 @@ $(function() {
 					}), undefined, params);
 					console.log(selectedDate.__month);
 				} else if (type === "prev") { //上个月
-					domStr = that.buildContent(that.getPrevMonth({
+					domStr = that.buildContent(that.getCurMonth({
 						year: selectedDate.__year,
 						month: selectedDate.__month--
 					}), undefined, $.extend({}, params, {
@@ -189,7 +191,7 @@ $(function() {
 		},
 		/**
 		 * 从字符串中获取时间
-		 * @param  {String|Date|Object} str       日期字符串 | 原生日期 | 字面量 {year : 2015,month : 6 , day : 25}
+		 * @param  {String|Date|Object} str       日期字符串(真实日期 2015-6-30 就是真实的六月三十日，对应的字面量为{year : 2015,month : 5 , day : 30}) | 原生日期 | 字面量 {year : 2015,month : 6 , day : 25}
 		 * @param  {String} filter                参数例子：'y+2', m+1',或'd+2' , 支持 'm+2,d+1'
 		 * @param  {RegExp} reg                   获取正则
 		 * @return {Object}                       {year : 2015,month : 6,day : 25,oriDate : Date}
@@ -206,7 +208,7 @@ $(function() {
 			if (typeof date === "string") { //字符串日期
 				reg = reg || /^(\d{4})\-(\d{1,2})\-(\d{1,2})$/;
 				var tmp = date.match(reg);
-				date = new Date(tmp[1], tmp[2], tmp[3]);
+				date = new Date(tmp[1], tmp[2] - 1, tmp[3]);
 			} else if (typeof date === "object") { //字面量日期
 				date = date instanceof Date ? date : new Date(date.year | 0, date.month | 0, date.day || 1);
 			} else {
@@ -250,7 +252,8 @@ $(function() {
 				oriDate: tmpDate,
 				toString: function() {
 					return that.format(tmpDate);
-				}
+				},
+				value: +tmpDate
 			};
 		},
 		/**
@@ -431,7 +434,7 @@ $(function() {
 			return resultStr;
 		},
 		/**
-		 * 日期比较
+		 * 日期比较是否相等
 		 * 
 		 * @param  {Date|String|Object} date                          需要比较的日期 Date : 原生日期 String : 字符串日期  Object : 字面量日期 {year : 2015,month : 6 : day : 25}
 		 * @param  {Date|String|Array[Date|String|Object]}   cpDate   对比日期
@@ -456,6 +459,19 @@ $(function() {
 					.toString() === this.getDate(cpDate)
 					.toString();
 			}
+		},
+		/**
+		 * 日期比较大小
+		 * @param  {Date|Object} aDate 原生日期或者字面量  {year : 2015,month : 6 : day : 25}
+		 * @param  {Date|Object} bDate 原生日期或者字面量  {year : 2015,month : 6 : day : 25}
+		 * @return {Int}       1:aDate > bDate 0:aDate = bDate -1:aDate < bDate
+		 */
+		dateCompare: function(aDate, bDate) {
+			var a = +this.getDate(aDate)
+				.value;
+			var b = +this.getDate(bDate)
+				.value;
+			return a === b ? 0 : (a > b ? 1 : -1);
 		},
 		/**
 		 * 比较是否在minDate 和 maxDate 之间
@@ -564,14 +580,15 @@ $(function() {
 
 	var start = $(".cal-start")
 		.tffCal({
-			onSelect: function(data) {
-				// end.tffCal("changeOption", {
-				// 	minDate: data
-				// });
+			onSelect: function(dateStr, date) {
+				console.log(arguments);
+				end.tffCal("changeOption", {
+					minDate: date
+				});
 				console.log("start date selected!");
 			},
 			minDate: new Date(2015, 5, 1),
-			selectedDate: new Date(2015, 5, 1)
+			selectedDate: new Date(2015, 5, 10)
 		});
 
 	var end = $(".cal-end")
@@ -592,7 +609,7 @@ $(function() {
 				console.log("start date selected!");
 			},
 			minDate: new Date(2015, 5, 1),
-			selectedDate: new Date(2015, 5, 1)
+			selectedDate: new Date(2015, 5, 30)
 		});
 
 	start.tffCal("relateTo", end); //start 和 end 关联起来
