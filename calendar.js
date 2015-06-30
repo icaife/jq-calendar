@@ -16,12 +16,7 @@ $(function() {
 			"today": "今天",
 			"y": "年",
 			"m": "月",
-			"d": "日",
-			"close": "关闭",
-			"spec": "假日价格",
-			"soldout": "售完",
-			"week_prefix": "周",
-			"checkout_tip": "最晚离店日期"
+			"d": "日"
 		},
 		"tw": {
 			"weeks": ["日", "一", "二", "三", "四", "五", "六"],
@@ -29,12 +24,7 @@ $(function() {
 			"today": "今天",
 			"y": "年",
 			"m": "月",
-			"d": "日",
-			"close": "關閉",
-			"spec": "假日價格",
-			"soldout": "售完",
-			"week_prefix": "週",
-			"checkout_tip": "最晚離店日期"
+			"d": "日"
 		},
 		"en": {
 			"weeks": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
@@ -42,25 +32,7 @@ $(function() {
 			"today": "Today",
 			"y": "",
 			"m": "",
-			"d": "",
-			"close": "Close",
-			"spec": "Holiday date",
-			"soldout": "Sold out date",
-			"week_prefix": "",
-			"checkout_tip": ""
-		},
-		"es": {
-			"weeks": ["Dom", "Lu", "Ma", "Mx", "Ju", "Vi", "Sab"],
-			"months": ["Enero", "Feb", "Marzo", "Abr", "Mayo", "Jun", "Jul", "Agosto", "Sept", "Oct", "Nov", "Dic"],
-			"today": "hoy",
-			"y": "",
-			"m": "",
-			"d": "",
-			"close": "cerrar",
-			"spec": "Alquiler fecha",
-			"soldout": "Agotadas fecha",
-			"week_prefix": "",
-			"checkout_tip": ""
+			"d": ""
 		}
 	};
 
@@ -71,17 +43,18 @@ $(function() {
 			var params = $.extend({}, cfgs, options);
 			that.config = params;
 			params.bindDom.data("tff_cal_index", this.elements.length); //给予下标
-			that.elements.push({ //push进去
+			var el = {
 				el: params.bindDom,
 				cfgs: params
-			}); //将元素加到elements
-			that.bindEvents(); //绑定事件
+			};
+			that.elements.push(el); //将元素加到elements
+			that.bindEvents(el); //绑定事件
 			return true;
 		},
 		/**
 		 * 绑定事件
 		 */
-		bindEvents: function() {
+		bindEvents: function(el) {
 			var that = this;
 
 			if (that.elements.length === 1) { //日历里面的事件只绑定一次
@@ -99,40 +72,66 @@ $(function() {
 						return false;
 					}
 					var _el = that.elements[that.__curElementIndex];
-					container.find(".d-selected").removeClass("d-selected");
+
+					_el.dayDoms.filter(".d-selected").removeClass("d-selected");
+
 					_this.addClass("d-selected");
 					var date = {
 						year: +_this.data("year"),
 						month: +_this.data("month"),
 						day: +_this.data("day"),
-						week: +_this.data("week"),
+						week: +_this.data("week")
 					};
 					date.__year = date.year; //用于存储当前显示的月份，在左右切换月份的时候有用。
 					date.__month = date.month;
 					var fmtDate = that.format(date);
 					_el.cfgs.selectedDate = date;
-					console.log(date);
-					_el.el.val(fmtDate);
-					// _el.focusDate = date;
+					// console.log(date);
+					_el.el[_el.el[0].tagName in {
+						"INPUT": 1,
+						"TEXTAREA": 1
+					} ? "val" : "text"](fmtDate);
+
 					void(_el.cfgs.onSelect && _el.cfgs.onSelect.call(_el.el, fmtDate, date));
-					that.hide();
+					// that.hide();
 				}).on("mouseenter", ".d-item", function() {
 					var _this = $(this);
 					if (_this.is(".d-dis") || _this.is(".d-none")) {
 						return false;
 					}
-					var _el = that.elements[that.__curElementIndex];
-					_this.prevAll(".d-item").not(".d-none").not(".d-dis").addClass("d-during").removeClass("d-selected");
-					_this.nextAll(".d-item").removeClass("d-during d-selected");
-					console.log(_this.nextAll(".d-item").hasClass("d-selected"));
-
+					_createDuring(_this);
+				}).on("mouseleave", ".m-day", function() {
+					console.log("day leave.");
 				});
 			}
 
+			//开始时间和结束时间之间的。
+			function _createDuring(dayItemDom) {
+				var input = that.elements[that.__curElementIndex]; //拿到当前的input
+				var domMonth = dayItemDom.data("month");
+				var month = input.cfgs.selectedDate.month;
+				var dayDoms = input.dayDoms;
+				var _curDate = dayItemDom.data("date");
+				var _curIndex = -1;
 
-			//触发日历显示
-			var els = that.elements;
-			var el = els[els.length - 1];
+				if (input.cfgs.__endTo || input.cfgs.__startFrom) { //开始时间
+					for (var i = 0, len = dayDoms.length; i < len; i++) {
+						var _curDom = dayDoms.eq(i);
+						if (_curIndex >= 0 || _curDom.data("date") === _curDate) {
+							_curDom[input.cfgs.__endTo ? "addClass" : "removeClass"]("d-during");
+							_curIndex = i;
+						} else {
+							_curDom[input.cfgs.__endTo ? "removeClass" : "addClass"]("d-during");
+						}
+					}
+				} else {
+
+				}
+
+			}
+
+
+			//绑定了日历的元素触发日历显示
 			el.el.on(el.cfgs.eventType, function() {
 				var _index = $(this).data("tff_cal_index");
 				that.__curElementIndex = _index; //当前点击的控件下标
@@ -142,6 +141,7 @@ $(function() {
 				// that.hide();
 			});
 
+			//创建内容
 			function _buildContent(type, o) { //type: next 为下一个月  prev为上一个月   其余则为当月
 				var params = o;
 				// var date = that.getDate($.isArray(params.s) ? params.focusDate[0] : params.focusDate);
@@ -149,6 +149,7 @@ $(function() {
 				var date = that.getDate(selectedDate);
 				selectedDate.__year = selectedDate.__year || date.year;
 				selectedDate.__month = selectedDate.__month === 0 ? 0 : (selectedDate.__month || date.month);
+				// o.selectedDate = date;
 
 				var domStr = "";
 
@@ -157,7 +158,7 @@ $(function() {
 						year: selectedDate.__year,
 						month: selectedDate.__month++
 					}), undefined, params);
-					console.log(params);
+					console.log(selectedDate.__month);
 				} else if (type === "prev") { //上个月
 					domStr = that.buildContent(that.getPrevMonth({
 						year: selectedDate.__year,
@@ -169,9 +170,10 @@ $(function() {
 					domStr = that.buildContent(date.year, date.month, params);
 				}
 
-				$(".tff-cal .c-wraper").html(domStr);
+				that.elements[that.__curElementIndex].dayDoms = $(o.container).find(".c-wraper").html(domStr).find(".d-item").not(".d-none").not(".d-dis");
 				return domStr;
 			}
+
 		},
 		/**
 		 * 从字符串中获取时间
@@ -309,6 +311,7 @@ $(function() {
 			var lang = cfg.lang;
 			var weeks = tffCalLang[lang].weeks;
 			var onDayBuild = (typeof cfg.onDayBuild === "function") ? cfg.onDayBuild : false;
+			var onBuildEnd = (typeof cfg.onBuildEnd === "function") ? cfg.onBuildEnd : false;
 			var focusDate = cfg.focusDate; //获得焦点的日期
 			var skipDate = cfg.skipDate; //哪些日期不能选
 			var selectedDate = cfg.selectedDate; //选中日期
@@ -318,7 +321,7 @@ $(function() {
 			var showMonths = cfg.showMonths || 1; //一次生成几个月
 			var mode = cfg.__mode || 1; //大于0 为获取下一个月的，小于0 为 获取上一个月
 
-			console.log(args);
+			// console.log(args);
 
 			function genEmpty(n, t) {
 				var str = "";
@@ -340,10 +343,6 @@ $(function() {
 						day: i
 					};
 					var args = { //回调函数的参数
-						focus: that.dateEqual(tmp, focusDate),
-						inRange: that.inRange(tmp, minDate, maxDate),
-						skip: that.dateEqual(tmp, skipDate),
-						selected: that.dateEqual(tmp, selectedDate),
 						date: that.getDate({
 							year: y,
 							month: m,
@@ -351,10 +350,18 @@ $(function() {
 						})
 					};
 
+					args.inRange = that.inRange(tmp, minDate, maxDate);
+					if (args.inRange) {
+						args.focus = that.dateEqual(tmp, focusDate);
+						args.skip = that.dateEqual(tmp, skipDate);
+						args.selected = that.dateEqual(tmp, selectedDate);
+					}
+
+
 					if (dayFormater) {
-						str += (dayFormater && dayFormater(i, args));
+						str += (dayFormater && dayFormater(i, args)) || "";
 					} else {
-						str += "<li data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" data-month=\"" + args.date.month + "\" data-year=\"" + args.date.year + "\" class=\"d-item" + (args.focus ? " d-focus" : "") + (args.inRange ? (args.skip ? " d-dis" : (args.selected ? " d-selected" : "")) : " d-dis") + "\">" + "<span class=\"d-wraper\">" + i + "</span>" + "</li>";
+						str += "<li data-date=\"" + that.format(args.date) + "\" data-day=\"" + i + "\" data-week=\"" + args.date.week + "\" data-month=\"" + args.date.month + "\" data-year=\"" + args.date.year + "\" class=\"d-item" + (args.focus ? " d-focus" : "") + (args.inRange ? (args.skip ? " d-dis" : (args.selected ? " d-selected" + (cfg.__startFrom ? " d-end" : cfg.__endTo ? " d-start" : "") : "")) : " d-dis") + "\">" + "<span class=\"d-wraper\">" + i + "</span>" + "</li>";
 					}
 					void(onDayBuild && onDayBuild.call(that, i, args));
 				}
@@ -386,8 +393,9 @@ $(function() {
 				}
 				return monthArr.join("");
 			}
-
-			return genMonth(showMonths);
+			var resultStr = genMonth(showMonths);
+			onBuildEnd && onBuildEnd();
+			return resultStr;
 		},
 		/**
 		 * 日期比较
@@ -449,6 +457,15 @@ $(function() {
 		},
 		cache: {},
 		elements: [], //绑定的元素
+		relateTo: function(startEl, endEl) { //关联到 结束的时间
+			// console.log(arguments);
+			var startIndex = startEl.data("tff_cal_index");
+			var endIndex = endEl.data("tff_cal_index");
+			var sel = this.elements[startIndex];
+			var eel = this.elements[endIndex];
+			sel.cfgs.__endTo = eel; //结束时间
+			eel.cfgs.__startFrom = sel; //开始时间
+		},
 		defaults: {
 			container: ".tff-cal", //日历容器
 			prev: ".tff-prev", //上一月按钮
@@ -472,7 +489,7 @@ $(function() {
 			cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
 			bindDom: $(".tff-cal-input"), //绑定的元素
 			eventType: "click", //触发的日历的事件类型
-			langLab: tffCalLang
+			langLab: tffCalLang //语言包
 		}
 	};
 
@@ -482,7 +499,9 @@ $(function() {
 			if (typeof args[0] === "string") {
 				var method = tffcal[args[0]];
 				if ($.isFunction(method)) {
-					method.apply(tffcal, [].slice.call(args, 1));
+					var tmpArgs = [].slice.call(args, 1);
+					console.log(method);
+					method.apply(tffcal, args[0] === "relateTo" ? [$(this)].concat(tmpArgs) : tmpArgs);
 				} else if (args[0] === "changeOption") {
 					var _index = $(this).data("tff_cal_index");
 					var _el = tffcal.elements[_index];
@@ -500,17 +519,31 @@ $(function() {
 
 	$.fn.tffCal.tool = tffcal;
 
-	$(".cal-start").tffCal({
-		onSelect: function() {
+	var start = $(".cal-start").tffCal({
+		onSelect: function(data) {
+			// end.tffCal("changeOption", {
+			// 	minDate: data
+			// });
 			console.log("start date selected!");
-		}
+		},
+		minDate: new Date(2015, 5, 1),
+		selectedDate: new Date(2015, 5, 1)
 	});
-	var x = $(".cal-end").tffCal({
-		onSelect: function() {
+
+	var end = $(".cal-end").tffCal({
+		onSelect: function(data) {
 			console.log("end date selected!");
+		},
+		onBuildEnd: function() {
+			console.log("on build end!");
+		},
+		onDayBuild: function() {
+			console.log("on day build!");
 		}
 	});
-	console.log(x);
+
+	start.tffCal("relateTo", end); //start 和 end 关联起来
+	// console.log(x);
 	// $(".tff-cal-input").eq(1).tffCal("changeOption", {
 	// 	minDate: new Date(2015, 8, 9)
 	// });
