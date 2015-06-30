@@ -118,6 +118,31 @@ $(function() {
 					});
 			}
 
+			//绑定了日历的元素触发日历显示
+			el.el.on(el.cfgs.eventType, function() {
+					var _index = $(this)
+						.data("tff_cal_index");
+					if (that.__curElementIndex === _index) {
+						return false;
+					}
+					that.__curElementIndex = _index; //当前点击的控件下标
+					var input = that.elements[_index];
+					_buildContent("cur", that.elements[_index].cfgs);
+
+					if (input.cfgs.__endTo || input.cfgs.__startFrom) {
+						var cfgs = input.cfgs;
+						cfgs.__endTo ?
+							_genDuration(cfgs.selectedDate, cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, input.dayDoms) :
+							_genDuration(cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, cfgs.selectedDate, input.dayDoms);
+					}
+
+					that.show(); //显示日历
+				})
+				.on("blur", function() {
+					// that.hide();
+				});
+
+			//创建日期期间
 			function _genDuration(startDate, endDate, dayDoms) {
 				dayDoms = dayDoms || that.elements[that.__curElementIndex].dayDoms;
 
@@ -135,20 +160,6 @@ $(function() {
 			}
 
 
-			//绑定了日历的元素触发日历显示
-			el.el.on(el.cfgs.eventType, function() {
-					var _index = $(this)
-						.data("tff_cal_index");
-					if (that.__curElementIndex === _index) {
-						return false;
-					}
-					that.__curElementIndex = _index; //当前点击的控件下标
-					_buildContent("cur", that.elements[_index].cfgs);
-					that.show(); //显示日历
-				})
-				.on("blur", function() {
-					// that.hide();
-				});
 
 			//创建内容
 			function _buildContent(type, o) { //type: next 为下一个月  prev为上一个月   其余则为当月
