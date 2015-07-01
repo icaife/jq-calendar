@@ -77,8 +77,8 @@ $(function() {
 
 						_el.dayDoms.filter(".d-selected")
 							.not(_el.cfgs.__endTo ? ".d-end" : _el.cfgs.__startFrom ? ".d-start" : "")
-							.removeClass("d-selected");
-						_this.addClass("d-selected");
+							.removeClass("d-selected d-start d-end");
+						_this.addClass("d-selected" + (_el.cfgs.__endTo ? " d-start" : _el.cfgs.__startFrom ? " d-end" : ""));
 						var date = that.getDate({
 							year: +_this.data("year"),
 							month: +_this.data("month"),
@@ -100,11 +100,12 @@ $(function() {
 						void(_el.cfgs.onSelect && _el.cfgs.onSelect.call(_el.el, fmtDate, date));
 						// that.hide();
 					})
-					.on("mouseenter", ".d-item", function() {
-						var _this = $(this);
-						if (_this.is(".d-dis") || _this.is(".d-none")) {
+					.on("mouseenter", ".d-item", function() { //移动到天上
+						if (/d\-(none)|(dis)/.test(this.className)) { //移到不可选的地方，恢复duration
+							_resetDuration();
 							return false;
 						}
+						var _this = $(this);
 						var input = that.elements[that.__curElementIndex];
 						var date = _this.data("date");
 						if (input.cfgs.__endTo) { //开始
@@ -113,8 +114,8 @@ $(function() {
 							_genDuration(input.cfgs.__startFrom.cfgs.selectedDate, date, input.dayDoms);
 						}
 					})
-					.on("mouseleave", ".m-day", function() {
-						console.log("day leave.");
+					.on("mouseleave", ".m-day", function() { //移到不可选的地方，恢复duration
+						_resetDuration();
 					});
 			}
 
@@ -163,7 +164,6 @@ $(function() {
 				// o.selectedDate = date;
 				selectedDate.__year = selectedDate.__year || date.year;
 				selectedDate.__month = selectedDate.__month === 0 ? 0 : (selectedDate.__month || date.month);
-
 				var domStr = "";
 
 				if (type === "next") { //下个月
@@ -171,9 +171,8 @@ $(function() {
 						year: selectedDate.__year,
 						month: selectedDate.__month++
 					}), undefined, params);
-					console.log(selectedDate.__month);
 				} else if (type === "prev") { //上个月
-					domStr = that.buildContent(that.getCurMonth({
+					domStr = that.buildContent(that.getPrevMonth({
 						year: selectedDate.__year,
 						month: selectedDate.__month--
 					}), undefined, $.extend({}, params, {
@@ -189,7 +188,12 @@ $(function() {
 					.find(".d-item")
 					.not(".d-none")
 					.not(".d-dis");
+				_resetDuration();
+				return domStr;
+			}
 
+			//重置duration
+			function _resetDuration() {
 				var input = that.elements[that.__curElementIndex];
 
 				if (input.cfgs.__endTo || input.cfgs.__startFrom) {
@@ -198,8 +202,6 @@ $(function() {
 						_genDuration(cfgs.selectedDate, cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, input.dayDoms) :
 						_genDuration(cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, cfgs.selectedDate, input.dayDoms);
 				}
-
-				return domStr;
 			}
 
 		},
@@ -425,7 +427,7 @@ $(function() {
 				var day = that.getDays(y, m); //获取当月最后一天
 				var wkDay = that.getWeekDay(y, m, 1); //获取当天星期几
 				for (var i = 0; i < n; i++) {
-					var yStr = ("<div class=\"m-year\" data-year=\"{Y}\" data-month=\"{M}\"><b>{Y}" + tffCalLang[lang].y + "{M}" + tffCalLang[lang].m + "</b></div>")
+					var yStr = ("<div class=\"m-year\" data-year=\"{Y}\" data-month=\"" + m + "\"><b>{Y}" + tffCalLang[lang].y + "{M}" + tffCalLang[lang].m + "</b></div>")
 						.replace(/\{Y\}/g, y)
 						.replace(/\{M\}/g, m + 1); //年 + 月
 					var wStr = "<ul class=\"m-week\"><li class=\"w-item w-wkend\">" + weeks[0] + "</li><li class=\"w-item\">" + weeks.slice(1, 6)
@@ -481,6 +483,12 @@ $(function() {
 		 * @return {Int}       1:aDate > bDate 0:aDate = bDate -1:aDate < bDate
 		 */
 		dateCompare: function(aDate, bDate) {
+			if (!aDate) {
+				return -1;
+			}
+			if (!bDate) {
+				return 1;
+			}
 			var a = +this.getDate(aDate)
 				.value;
 			var b = +this.getDate(bDate)
@@ -562,7 +570,8 @@ $(function() {
 			cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
 			bindDom: $(".tff-cal-input"), //绑定的元素
 			eventType: "click", //触发的日历的事件类型
-			langLab: tffCalLang //语言包
+			langLab: tffCalLang, //语言包
+			autoClose: true //选择后是否自动关闭
 		}
 	};
 
@@ -595,14 +604,14 @@ $(function() {
 	var start = $(".cal-start")
 		.tffCal({
 			onSelect: function(dateStr, date) {
-				console.log(arguments);
+				// console.log(arguments);
 				end.tffCal("changeOption", {
 					minDate: date
 				});
 				console.log("start date selected!");
 			},
 			minDate: new Date(2015, 5, 1),
-			selectedDate: new Date(2015, 5, 10)
+			// selectedDate: new Date(2015, 5, 10)
 		});
 
 	var end = $(".cal-end")
@@ -623,7 +632,7 @@ $(function() {
 				console.log("start date selected!");
 			},
 			minDate: new Date(2015, 5, 1),
-			selectedDate: new Date(2015, 5, 30)
+			// selectedDate: null
 		});
 
 	start.tffCal("relateTo", end); //start 和 end 关联起来
