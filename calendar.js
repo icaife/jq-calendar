@@ -135,9 +135,14 @@ $(function() {
 					if (that.__curElementIndex === _index) {
 						return false;
 					}
-					that.__curElementIndex = _index; //当前点击的控件下标
 
-					_buildContent("cur", that.elements[_index].cfgs);
+					that.__curElementIndex = _index; //当前点击的控件下标
+					var _input = that.elements[_index];
+					var _cfgs = _input.cfgs;
+					if (_cfgs.__startFrom && that.dateCompare(_cfgs.__startFrom.cfgs.selectedDate, _cfgs.selectedDate) === 1) { //如果结束日期小于开始日期，那么结束日期 默认为开始日期
+						_cfgs.selectedDate = _cfgs.__startFrom.cfgs.selectedDate;
+					}
+					_buildContent("cur", _cfgs);
 
 					that.show(); //显示日历
 				})
