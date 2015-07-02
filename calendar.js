@@ -61,20 +61,10 @@ $(function() {
 				//左右按钮事件
 				var container = $(".tff-cal");
 				container.on("click", ".tff-next", function() {
-						var _el = that.elements[that.__curElementIndex];
-						var _month = container.find(".m-year")
-							.first();
-						_el.cfgs.selectedDate.__year = _month.data("year"); //用于存储当前显示的月份，在左右切换月份的时候有用。
-						_el.cfgs.selectedDate.__month = _month.data("month");
-						_buildContent("next", _el.cfgs);
+						return _switchMonth("next");
 					})
 					.on("click", ".tff-prev", function() {
-						var _el = that.elements[that.__curElementIndex];
-						var _month = container.find(".m-year")
-							.last();
-						_el.cfgs.selectedDate.__year = _month.data("year"); //用于存储当前显示的月份，在左右切换月份的时候有用。
-						_el.cfgs.selectedDate.__month = _month.data("month");
-						_buildContent("prev", _el.cfgs);
+						return _switchMonth("prev");
 					})
 					.on("click", ".d-item", function() { //日期选择事件
 						var _this = $(this);
@@ -168,9 +158,38 @@ $(function() {
 			}
 
 
+			//切换月份
+			//type : prev | next
+			function _switchMonth(type) {
+				var _el = that.elements[that.__curElementIndex],
+					_cfgs = _el.cfgs,
+					_selDate = _cfgs.selectedDate,
+					_month = container.find(".m-year")[type === "next" ? "first" : "last"](),
+					_y = _month.data("year"),
+					_m = _month.data("month");
+
+				if (!_cfgs.showOutOfRange) {
+					var tmp = that.getDate(_cfgs[type === "next" ? "maxDate" : "minDate"]);
+					if (type === "next") {
+						if (_y + _m + _cfgs.showMonths > tmp.year + tmp.month) { //超过最大的日期
+							return false;
+						}
+					} else { //小于最小的日期
+						if (_y + _m - _cfgs.showMonths < tmp.year + tmp.month) {
+							return false;
+						}
+					}
+				}
+
+
+				_selDate.__year = _y; //用于存储当前显示的月份，在左右切换月份的时候有用。
+				_selDate.__month = _m;
+				_buildContent(type, _cfgs);
+			}
 
 			//创建内容
-			function _buildContent(type, o) { //type: next 为下一个月  prev为上一个月   其余则为当月
+			//type: next 为下一个月  prev为上一个月   其余则为当月
+			function _buildContent(type, o) {
 				var params = o;
 				// var date = that.getDate($.isArray(params.s) ? params.focusDate[0] : params.focusDate);
 				var selectedDate = params.selectedDate;
@@ -182,14 +201,14 @@ $(function() {
 
 
 				if (type === "next") { //下个月
-					domStr = that.buildContent(that.getCurMonth({
+					domStr = that.buildContent(that.getNextMonth({
 						year: selectedDate.__year,
-						month: ++selectedDate.__month
+						month: selectedDate.__month++
 					}), undefined, params);
 				} else if (type === "prev") { //上个月
-					domStr = that.buildContent(that.getCurMonth({
+					domStr = that.buildContent(that.getPrevMonth({
 						year: selectedDate.__year,
-						month: --selectedDate.__month
+						month: selectedDate.__month--
 					}), undefined, $.extend({}, params, {
 						__mode: -1
 					}));
@@ -220,6 +239,7 @@ $(function() {
 					}
 				}
 			}
+
 		},
 		/**
 		 * 从字符串中获取时间
@@ -597,7 +617,7 @@ $(function() {
 			dateFormat: "yyyy-mm-dd", //日期格式
 			maxDate: new Date(2099, 11, 31), //最大可选日期
 			minDate: new Date(), //最小可选日期
-			selectOutOfRange: false, //不在minDate 和 maxDate 之间的日期是否可选择  true : 可选， false : 不可选
+			showOutOfRange: false, //不在minDate 和 maxDate 之间的日期是否展示  true : 展示 false : 不展示
 			changeOption: false, //改变参数的函数 传入参数  key  value
 			cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
 			bindDom: $(".tff-cal-input"), //绑定的元素
