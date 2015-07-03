@@ -1,7 +1,7 @@
 /**
  * @author Leon
  * @description 酒店日历控件V1.0
- * @date 2015年6月26日 
+ * @date 2015年6月26日
  * @ps 全部月份统一成 0 开始，只有format函数 出来是真实的月份，即 月份从0开始
  * 全局只有一个calendar
  */
@@ -71,12 +71,7 @@ $(function() {
 						if (_this.is(".d-dis") || _this.is(".d-none")) {
 							return false;
 						}
-						var _el = that.elements[that.__curElementIndex];
-
-						_el.dayDoms.filter(".d-selected")
-							.not(_el.cfgs.__endTo ? ".d-end" : _el.cfgs.__startFrom ? ".d-start" : "")
-							.removeClass("d-selected d-start d-end");
-						_this.addClass("d-selected" + (_el.cfgs.__endTo ? " d-start" : _el.cfgs.__startFrom ? " d-end" : ""));
+						var input = that.elements[that.__curElementIndex];
 
 						var date = that.getDate({
 							year: +_this.data("year"),
@@ -87,34 +82,53 @@ $(function() {
 						date.week = +_this.data("week");
 
 						var fmtDate = that.format(date);
-						_el.cfgs.selectedDate = date;
+						input.cfgs.selectedDate = date;
 						// console.log(date);
-						_el.el[_el.el[0].tagName in {
+						input.el[input.el[0].tagName in {
 							"INPUT": 1,
 							"TEXTAREA": 1
 						} ? "val" : "text"](fmtDate);
 
-						void(_el.cfgs.onSelect && _el.cfgs.onSelect.call(_el.el, fmtDate, date));
-						void(_el.cfgs.autoClose && that.hide());
+						void(input.cfgs.onSelect && input.cfgs.onSelect.call(input.el, fmtDate, date));
+						void(input.cfgs.autoClose && that.hide());
+
+						if (input.cfgs.__endTo) { //开始
+							if (that.dateCompare(date, input.cfgs.__endTo.cfgs.selectedDate) === 1) { //如果选择的时间大于了结束时间
+								input.cfgs.__endTo.cfgs.selectedDate = date; //结束时间就等于开始时间！
+							}
+							_genDuration(date, null, input.dayDoms);
+						} else if (input.cfgs.__startFrom) { //结束
+							if (that.dateCompare(input.cfgs.__startFrom.cfgs.selectedDate, date) === 1) { //如果选择的时间小于了开始时间
+								input.cfgs.__startFrom.cfgs.selectedDate = date; //结束时间就等于开始时间！
+							}
+							_genDuration(null, date, input.dayDoms);
+						}
+
 					})
 					.on("mouseenter", ".d-item", function() { //移动到天上
 						if (/d\-(none)|(dis)/.test(this.className)) { //移到不可选的地方，恢复duration
-							_resetDuration();
+							// _resetDuration();
+							_genDuration();
 							return false;
 						}
 						var _this = $(this);
 						var input = that.elements[that.__curElementIndex];
 						var date = _this.data("date");
 						if (input.cfgs.__endTo) { //开始
-							_genDuration(date, input.cfgs.__endTo.cfgs.selectedDate, input.dayDoms);
+							_genDuration(date, null, input.dayDoms);
 						} else if (input.cfgs.__startFrom) { //结束
-							_genDuration(input.cfgs.__startFrom.cfgs.selectedDate, date, input.dayDoms);
+							_genDuration(null, date, input.dayDoms);
 						}
 					})
 					.on("mouseleave", ".m-day", function() { //移到不可选的地方，恢复duration
 						if (that.__visible) {
-							_resetDuration();
+							_genDuration();
 						}
+					})
+					.on("click", ".o-item", function() { //模糊搜索
+						var _this = $(this);
+						var _range = _this.data("range") || 0;
+						_fuzzySelect(_range);
 					});
 			}
 
@@ -142,17 +156,44 @@ $(function() {
 
 			//创建日期期间
 			function _genDuration(startDate, endDate, dayDoms) {
-				dayDoms = dayDoms || that.elements[that.__curElementIndex].dayDoms;
+				var input = that.elements[that.__curElementIndex];
+				if (input.cfgs.__endTo) { //开始
+					startDate = startDate || input.cfgs.selectedDate;
+					endDate = endDate || input.cfgs.__endTo.cfgs.selectedDate;
+				} else { //结束
+					startDate = startDate || input.cfgs.__startFrom.cfgs.selectedDate;
+					endDate = endDate || input.cfgs.selectedDate;
+				}
+
+				dayDoms = dayDoms || input.dayDoms;
 
 				for (var i = 0, len = dayDoms.length; i < len; i++) {
-					var _curDom = dayDoms.eq(i);
-					var _curDate = _curDom.data("date");
-					switch (that.dateCompare(_curDate, startDate) + that.dateCompare(endDate, _curDate)) {
-						case 2:
-							_curDom.addClass("d-during");
+					var _curDom = dayDoms.eq(i),
+						_curDate = _curDom.data("date"),
+						_startEqual = that.dateCompare(_curDate, startDate),
+						_endEqual = that.dateCompare(endDate, _curDate);
+
+					switch (_startEqual + _endEqual) {
+						case -2:
+							break;
+						case -1:
+							break;
+						case 0:
+							if (_startEqual == 0 && _endEqual == 0) { //如果开始时间和结束时间相同
+								_curDom.addClass("d-selected d-start d-end")
+							} else {
+								_curDom.removeClass("d-during d-selected d-start d-end");
+							}
+							break;
+						case 1: //当前日期与开始日期或者结束如期相同
+							_curDom.addClass("d-selected " + (_startEqual === 0 ? "d-start" : "d-end"));
+							break;
+						case 2: //当前时间 > 开始时间 && 当前时间 < 结束时间
+							_curDom.addClass("d-during")
+								.removeClass("d-start d-end d-selected");
 							break;
 						default:
-							_curDom.removeClass("d-during");
+							void(0);
 					}
 				}
 			}
@@ -222,24 +263,34 @@ $(function() {
 					.find(".d-item")
 					.not(".d-none")
 					.not(".d-dis");
-				_resetDuration();
+				// _resetDuration();
+				_genDuration();
+
 				return domStr;
 			}
 
-			//重置duration
-			function _resetDuration() {
-				var input = that.elements[that.__curElementIndex];
-
-				if (input.cfgs.__endTo || input.cfgs.__startFrom) {
-					var cfgs = input.cfgs;
-					if (cfgs.__endTo) {
-						_genDuration(cfgs.selectedDate, cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, input.dayDoms);
-					} else {
-						_genDuration(cfgs[input.cfgs.__endTo ? "__endTo" : "__startFrom"].cfgs.selectedDate, cfgs.selectedDate, input.dayDoms);
+			//模糊选择
+			function _fuzzySelect(range) {
+				var input = that.elements[that.__curElementIndex],
+					_cfgs = input.cfgs;
+				if (_cfgs.__endTo || _cfgs.__startFrom) {
+					var startDate = null,
+						endDate = null;
+					if (_cfgs.__endTo) { //开始
+						startDate = _cfgs.selectedDate;
+						endDate = _cfgs.__endTo.cfgs.selectedDate = that.getDate(startDate, "d+" + range);
+					} else { //结束
+						startDate = _cfgs.__startFrom.cfgs.selectedDate;
+						endDate = _cfgs.selectedDate = that.getDate(startDate, "d+" + range);
 					}
+					_genDuration(startDate, endDate);
 				}
 			}
 
+			//单个选择
+			// function _singleSelect(){
+
+			// }
 		},
 		/**
 		 * 从字符串中获取时间
@@ -485,7 +536,7 @@ $(function() {
 					y = _d.year;
 					m = _d.month;
 					day = that.getDays(y, m); //获取当月最后一天
-					wkDay = that.getWeekDay(y, m, 1); //获取当天星期几          
+					wkDay = that.getWeekDay(y, m, 1); //获取当天星期几
 				}
 				return monthArr.join("");
 			}
@@ -496,7 +547,7 @@ $(function() {
 		},
 		/**
 		 * 日期比较是否相等
-		 * 
+		 *
 		 * @param  {Date|String|Object} date                          需要比较的日期 Date : 原生日期 String : 字符串日期  Object : 字面量日期 {year : 2015,month : 6 : day : 25}
 		 * @param  {Date|String|Array[Date|String|Object]}   cpDate   对比日期
 		 * @return {Boolean}                                          true : 相等 false : 不等
@@ -542,9 +593,9 @@ $(function() {
 		},
 		/**
 		 * 比较是否在minDate 和 maxDate 之间
-		 * 
+		 *
 		 * @param  {Date|String|Object|Array[Date|String|Object]} date    需要比较的时间
-		 * @param  {Date|String|Object}                           minDate 最小时间 
+		 * @param  {Date|String|Object}                           minDate 最小时间
 		 * @param  {Date|String|Object}                           maxDate 最大时间
 		 * @return {Boolean}                                      true : 在时间段内，false : 不在时间段内
 		 */
@@ -598,6 +649,22 @@ $(function() {
 		},
 		isVisible: function() {
 			return this.__visible;
+		},
+		/**
+		 * 获取两个日期的差值(天数)
+		 * @param  {Date|Object|String} startDate 	开始日期
+		 * @param  {Date|Object|String} endDate   	结束日期
+		 * @return {Integer}           				相差的天数
+		 */
+		getDiff: function(startDate, endDate) {
+			if (!startDate || !endDate) {
+				return 0;
+			}
+
+			var aDate = this.getDate(startDate),
+				bDate = this.getDate(endDate);
+
+			return Math.abs((aDate.value - bDate.value) / (86400000) | 0);
 		},
 		defaults: {
 			container: ".tff-cal", //日历容器
@@ -680,14 +747,41 @@ $(function() {
 				// });
 				console.log("start date selected!");
 			},
-			minDate: new Date(2015, 5, 1),
-			selectedDate: new Date(2015, 5, 1)
+			minDate: new Date(2015, 5, 1)
 		});
 
 	start.tffCal("relateTo", end); //start 和 end 关联起来
-	// console.log(x);
-	// $(".tff-cal-input").eq(1).tffCal("changeOption", {
-	// 	minDate: new Date(2015, 8, 9)
-	// });
 
 });
+
+
+//                            _ooOoo_  
+//                           o8888888o  
+//                           88" . "88  
+//                           (| -_- |)  
+//                            O\ = /O  
+//                        ____/`---'\____  
+//                      .   ' \\| |// `.  
+//                       / \\||| : |||// \  
+//                     / _||||| -:- |||||- \  
+//                       | | \\\ - /// | |  
+//                     | \_| ''\---/'' | |  
+//                      \ .-\__ `-` ___/-. /  
+//                   ___`. .' /--.--\ `. . __  
+//                ."" '< `.___\_<|>_/___.' >'"".  
+//               | | : `- \`.;`\ _ /`;.`/ - ` : | |  
+//                 \ \ `-. \_ __\ /__ _/ .-` / /  
+//         ======`-.____`-.___\_____/___.-`____.-'======  
+//                            `=---='  
+//  
+//         .............................................  
+//                  佛祖保佑             永无BUG 
+//          佛曰:  
+//                  写字楼里写字间，写字间里程序员；  
+//                  程序人员写程序，又拿程序换酒钱。  
+//                  酒醒只在网上坐，酒醉还来网下眠；  
+//                  酒醉酒醒日复日，网上网下年复年。  
+//                  但愿老死电脑间，不愿鞠躬老板前；  
+//                  奔驰宝马贵者趣，公交自行程序员。  
+//                  别人笑我忒疯癫，我笑自己命太贱；  
+//                  不见满街漂亮妹，哪个归得程序员？
