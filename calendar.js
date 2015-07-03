@@ -81,15 +81,11 @@ $(function() {
 
 						date.week = +_this.data("week");
 
-						var fmtDate = that.format(date);
 						input.cfgs.selectedDate = date;
 						// console.log(date);
-						input.el[input.el[0].tagName in {
-							"INPUT": 1,
-							"TEXTAREA": 1
-						} ? "val" : "text"](fmtDate);
+						_setValue(input, date);
 
-						void(input.cfgs.onSelect && input.cfgs.onSelect.call(input.el, fmtDate, date));
+						void(input.cfgs.onSelect && input.cfgs.onSelect.call(input.el, that.format(date), date));
 						void(input.cfgs.autoClose && that.hide());
 
 						if (input.cfgs.__endTo) { //开始
@@ -279,12 +275,23 @@ $(function() {
 					if (_cfgs.__endTo) { //开始
 						startDate = _cfgs.selectedDate;
 						endDate = _cfgs.__endTo.cfgs.selectedDate = that.getDate(startDate, "d+" + range);
+						_setValue(_cfgs.__endTo, endDate);
 					} else { //结束
 						startDate = _cfgs.__startFrom.cfgs.selectedDate;
 						endDate = _cfgs.selectedDate = that.getDate(startDate, "d+" + range);
+						_setValue(input, endDate);
 					}
+
 					_genDuration(startDate, endDate);
 				}
+			}
+
+			function _setValue(input, date) {
+				var fmtDate = typeof date === "object" ? that.format(date) : date;
+				input.el[input.el[0].tagName in {
+					"INPUT": 1,
+					"TEXTAREA": 1
+				} ? "val" : "text"](fmtDate);
 			}
 
 			//单个选择
