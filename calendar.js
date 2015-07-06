@@ -128,16 +128,15 @@ $(function() {
 						if (!that.__visible) {
 							return false;
 						}
-						setTimeout(function() {
 
-							var input = that.elements[that.__curElementIndex];
-							if (input.cfgs.autoClose) {
-								var target = event.target;
-								if (!$.contains($(input.cfgs.container)[0], target) && !input.el.is(target)) {
-									that.hide();
-								}
+						var input = that.elements[that.__curElementIndex];
+						if (input.cfgs.autoClose) {
+							var target = event.target;
+							if (!$.contains($(input.cfgs.container)[0], target) && !input.el.is(target)) {
+								that.hide();
 							}
-						}, 10);
+						}
+
 					});
 			}
 
