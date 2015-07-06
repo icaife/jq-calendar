@@ -1,9 +1,8 @@
 /**
  * @author Leon
  * @description 酒店日历控件V1.0
- * @date 2015年6月26日
- * @ps 全部月份统一成 0 开始，只有format函数 出来是真实的月份，即 月份从0开始
- * 全局只有一个calendar
+ * @date 2015 年6月26日
+ * @ps 全部月份统一成 0 开始， 只有format函数 出来是真实的月份， 即 月份从0开始 * 全局只有一个calendar
  */
 
 /*global $,console*/
@@ -117,14 +116,27 @@ $(function() {
 						}
 					})
 					.on("mouseleave", ".m-day", function() { //移到不可选的地方，恢复duration
-						if (that.__visible) {
-							_genDuration();
-						}
+						_genDuration();
 					})
 					.on("click", ".o-item", function() { //模糊搜索
 						var _this = $(this);
 						var _range = _this.data("range") || 0;
 						_fuzzySelect(_range);
+					});
+				$(document)
+					.on("click.tffcal", function(event) {
+						if (!that.__visible) {
+							return false;
+						}
+						var input = that.elements[that.__curElementIndex];
+
+						if (input.cfgs.autoClose) {
+							var target = event.target;
+							if (!(new RegExp(input.cfgs.container.replace(/\./g, "")))
+								.test(target.className + target.id)) {
+								that.hide();
+							}
+						}
 					});
 			}
 
@@ -143,8 +155,9 @@ $(function() {
 						_cfgs.selectedDate = _cfgs.__startFrom.cfgs.selectedDate;
 					}
 					_buildContent("cur", _cfgs);
-
+					that.setPosition();
 					that.show(); //显示日历
+					_genDuration();
 				})
 				.on("blur", function() {
 					// that.hide();
@@ -152,7 +165,11 @@ $(function() {
 
 			//创建日期期间
 			function _genDuration(startDate, endDate, dayDoms) {
+				if (!that.__visible) {
+					return false;
+				}
 				var input = that.elements[that.__curElementIndex];
+
 				if (input.cfgs.__endTo) { //开始
 					startDate = startDate || input.cfgs.selectedDate;
 					endDate = endDate || input.cfgs.__endTo.cfgs.selectedDate;
@@ -631,17 +648,17 @@ $(function() {
 		},
 		//显示日历
 		show: function() {
-			this.__visible = true;
-			$(this.defaults.container)
+			$(this.elements[this.__curElementIndex].cfgs.container || this.defaults.container)
 				.show();
+			this.__visible = true;
 		},
 		//隐藏日历
 		hide: function() {
 			var that = this;
+			$(that.elements[that.__curElementIndex].cfgs.container || that.defaults.container)
+				.hide();
 			that.__visible = false;
 			that.__curElementIndex = -1;
-			$(that.defaults.container)
-				.hide();
 		},
 		cache: {},
 		elements: [], //绑定的元素
@@ -673,6 +690,58 @@ $(function() {
 
 			return Math.abs((aDate.value - bDate.value) / (86400000) | 0);
 		},
+		/**
+		 * 设置日历位置
+		 * @param {Object} input 
+		 */
+		setPosition: function(input) {
+			input = input || this.elements[this.__curElementIndex];
+			var cfgs = input.cfgs;
+			var el = input.el;
+			var _wrap = $(cfgs.container);
+			var x = el.offset()
+				.left;
+			var y = el.offset()
+				.top;
+			var winW = $(window)
+				.width();
+			var winH = $(window)
+				.height();
+			var wrapW = _wrap.width();
+			var wrapH = _wrap.height();
+
+			var offsetX = cfgs.offsetX || 0;
+			var offsetY = cfgs.offsetY || el.outerHeight();
+			// if (x + wrapW > winW && _o.autoPosition === true) {
+			//     _wrap.css({
+			//         left: x - (x + wrapW - winW) + offsetX
+			//     });
+			if (x + wrapW + offsetX > winW && cfgs.autoPosition === true) {
+				_wrap.css({
+					left: x - wrapW
+				});
+			} else {
+				_wrap.css({
+					left: x + offsetX
+				});
+			}
+			if (y + wrapH + offsetY > $(document)
+				.scrollTop() + winH && cfgs.autoPosition === true) {
+				// _wrap.css({
+				//     top: (y - wrapH) //重置掉原来的TOP定位
+				//     // top: y + offsetY
+				// });
+
+				_wrap.css({
+					top: y + offsetY
+				});
+			} else {
+				_wrap.css({
+					top: y + offsetY
+				});
+			}
+			console.log(x);
+		},
 		defaults: {
 			container: ".tff-cal", //日历容器
 			prev: ".tff-prev", //上一月按钮
@@ -697,7 +766,10 @@ $(function() {
 			bindDom: $(".tff-cal-input"), //绑定的元素
 			eventType: "click", //触发的日历的事件类型
 			langLab: tffCalLang, //语言包
-			autoClose: false //选择后是否自动关闭
+			autoClose: true, //选择后是否自动关闭
+			autoPosition: true,
+			offsetX: 0,
+			offsetY: 0
 		}
 	};
 
