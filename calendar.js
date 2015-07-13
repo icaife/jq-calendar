@@ -5,9 +5,9 @@
  * @ps 全部月份统一成 0 开始， 只有format函数 出来是真实的月份， 即 月份从0开始 * 全局只有一个calendar
  */
 
-/*global $,console*/
+/*global $*/
 "use strict";
-$(function() {
+(function() {
 	var tffCalLang = {
 		"cn": {
 			"weeks": ["日", "一", "二", "三", "四", "五", "六"],
@@ -140,8 +140,18 @@ $(function() {
 					});
 			}
 
+			if (input.cfgs.readout) { //是否从输入框读出日期？
+				var dateStr = $.trim(input.el[input.el[0].tagName in {
+					"INPUT": 1,
+					"TEXTAREA": 1
+				} ? "val" : "text"]());
+				if (that.isValid(dateStr)) {
+					input.cfgs.selectedDate = that.getDate(dateStr);
+				}
+			}
+
 			//绑定了日历的元素触发日历显示
-			input.el.on(input.cfgs.eventType, function() {
+			input.el.on(input.cfgs.eventType + " focus", function() {
 					var _index = $(this)
 						.data("tff_cal_index");
 					if (that.__curElementIndex === _index) {
@@ -192,8 +202,8 @@ $(function() {
 						case -1:
 							break;
 						case 0:
-							if (_startEqual == 0 && _endEqual == 0) { //如果开始时间和结束时间相同
-								_curDom.addClass("d-selected d-start d-end")
+							if (_startEqual === 0 && _endEqual === 0) { //如果开始时间和结束时间相同
+								_curDom.addClass("d-selected d-start d-end");
 							} else {
 								_curDom.removeClass("d-during d-selected d-start d-end");
 							}
@@ -460,24 +470,24 @@ $(function() {
 				onDayBuild = (typeof cfg.onDayBuild === "function") ?
 				cfg.onDayBuild : false,
 				onBuildEnd = (typeof cfg.onBuildEnd === "function") ? cfg.onBuildEnd : false,
-				focusDate = cfg.focusDate //获得焦点的日期
-				,
-				skipDate = cfg.skipDate //哪些日期不能选
-				,
-				selectedDate = cfg.selectedDate //选中日期
-				,
+				focusDate = cfg.focusDate, //获得焦点的日期
+
+				skipDate = cfg.skipDate, //哪些日期不能选
+
+				selectedDate = cfg.selectedDate, //选中日期
+
 				relativeDate = ((cfg.__startFrom || cfg.__endTo || {})
 					.cfgs || {})
 				.selectedDate || false, //关联的日期，用于开始时间和结束时间
 
-				dayFormater = cfg.dayFormater //dat format
-				,
-				minDate = cfg.minDate //最小可选日期
-				,
-				maxDate = cfg.maxDate //最大可选日期
-				,
-				showMonths = cfg.showMonths || 1 //一次生成几个月
-				,
+				dayFormater = cfg.dayFormater, //dat format
+
+				minDate = cfg.minDate, //最小可选日期
+
+				maxDate = cfg.maxDate, //最大可选日期
+
+				showMonths = cfg.showMonths || 1, //一次生成几个月
+
 				mode = cfg.__mode || 1; //大于0 为获取下一个月的，小于0 为 获取上一个月
 
 			// console.log(args);
@@ -648,6 +658,9 @@ $(function() {
 		},
 		//显示日历
 		show: function() {
+			if (this.__visible) {
+				return false;
+			}
 			$(this.elements[this.__curElementIndex].cfgs.container || this.defaults.container)
 				.show();
 			this.__visible = true;
@@ -655,6 +668,9 @@ $(function() {
 		//隐藏日历
 		hide: function() {
 			var that = this;
+			if (!that.__visible) {
+				return false;
+			}
 			$(that.elements[that.__curElementIndex].cfgs.container || that.defaults.container)
 				.hide();
 			that.__visible = false;
@@ -676,9 +692,9 @@ $(function() {
 		},
 		/**
 		 * 获取两个日期的差值(天数)
-		 * @param  {Date|Object|String} startDate 	开始日期
-		 * @param  {Date|Object|String} endDate   	结束日期
-		 * @return {Integer}           				相差的天数
+		 * @param  {Date|Object|String} startDate   开始日期
+		 * @param  {Date|Object|String} endDate     结束日期
+		 * @return {Integer}                        相差的天数
 		 */
 		getDiff: function(startDate, endDate) {
 			if (!startDate || !endDate) {
@@ -740,7 +756,6 @@ $(function() {
 					top: y + offsetY
 				});
 			}
-			console.log(x);
 		},
 		defaults: {
 			container: ".tff-cal", //日历容器
@@ -761,7 +776,7 @@ $(function() {
 			maxDate: new Date(2099, 11, 31), //最大可选日期
 			minDate: new Date(), //最小可选日期
 			showOutOfRange: false, //不在minDate 和 maxDate 之间的日期是否展示  true : 展示 false : 不展示
-			changeOption: false, //改变参数的函数 传入参数  key  value
+			// changeOption: false, //改变参数的函数 传入参数  key  value
 			cache: false, //生成的月份内容 缓存开关  true : 开启  false : 关闭
 			bindDom: $(".tff-cal-input"), //绑定的元素
 			eventType: "click", //触发的日历的事件类型
@@ -769,25 +784,45 @@ $(function() {
 			autoClose: true, //选择后是否自动关闭
 			autoPosition: true,
 			offsetX: 0,
-			offsetY: 0
+			offsetY: 0,
+			readout: false //是否从输入框读出日期
+		},
+		/**
+		 * 验证字符串日期是否正确
+		 * @param  {String}  dateStr 日期字符串
+		 * @return {Boolean}         true : 验证通过  false : 验证失败
+		 */
+		isValid: function(dateStr) {
+			var reg =
+				/((^((1[8-9]\d{2})|([2-9]\d{3}))([-\/\._])(10|12|0?[13578])([-\/\._])(3[01]|[12][0-9]|0?[1-9])$)|(^((1[8-9]\d{2})|([2-9]\d{3}))([-\/\._])(11|0?[469])([-\/\._])(30|[12][0-9]|0?[1-9])$)|(^((1[8-9]\d{2})|([2-9]\d{3}))([-\/\._])(0?2)([-\/\._])(2[0-8]|1[0-9]|0?[1-9])$)|(^([2468][048]00)([-\/\._])(0?2)([-\/\._])(29)$)|(^([3579][26]00)([-\/\._])(0?2)([-\/\._])(29)$)|(^([1][89][0][48])([-\/\._])(0?2)([-\/\._])(29)$)|(^([2-9][0-9][0][48])([-\/\._])(0?2)([-\/\._])(29)$)|(^([1][89][2468][048])([-\/\._])(0?2)([-\/\._])(29)$)|(^([2-9][0-9][2468][048])([-\/\._])(0?2)([-\/\._])(29)$)|(^([1][89][13579][26])([-\/\._])(0?2)([-\/\._])(29)$)|(^([2-9][0-9][13579][26])([-\/\._])(0?2)([-\/\._])(29)$))/;
+			return reg.test(dateStr);
 		}
 	};
 
 	$.fn.tffCal = function() {
 		var args = arguments;
-		return this.each(function() {
+		var val = this;
+		this.each(function() {
 			if (typeof args[0] === "string") {
 				var method = tffcal[args[0]];
 				if ($.isFunction(method)) {
 					var tmpArgs = [].slice.call(args, 1);
 					method.apply(tffcal, args[0] === "relateTo" ? [$(this)].concat(tmpArgs) : tmpArgs);
-				} else if (args[0] === "changeOption") {
+				} else if (args[0] === "set") {
 					var _index = $(this)
 						.data("tff_cal_index");
 					var _el = tffcal.elements[_index];
 					if ($.isPlainObject(args[1])) {
 						_el.cfgs = $.extend({}, _el.cfgs, args[1]);
 					}
+				} else if (args[0] === "get") {
+					var index = $(this)
+						.data("tff_cal_index");
+					var el = tffcal.elements[index];
+					val = el.cfgs[args[1]];
+					// if (typeof args[2] === "function") {
+					//  args[2].apply(el, [el.cfgs[args[1]]]);
+					// }
 				}
 			} else {
 				var options = args[0] || {};
@@ -795,71 +830,9 @@ $(function() {
 				tffcal.init(options);
 			}
 		});
+		return val;
 	};
 
 	$.fn.tffCal.tool = tffcal;
 
-	var start = $(".cal-start")
-		.tffCal({
-			onSelect: function(dateStr, date) {
-					// console.log(arguments);
-					end.tffCal("changeOption", {
-						minDate: date
-					});
-					console.log("start date selected!");
-				}
-				// selectedDate: new Date(2015, 5, 10)
-		});
-
-	var end = $(".cal-end")
-		.tffCal({
-			onBuildEnd: function() {
-				console.log("on build end!");
-			},
-			onDayBuild: function() {
-				console.log("on day build!");
-			},
-			onSelect: function(data) {
-				// end.tffCal("changeOption", {
-				// 	minDate: data
-				// });
-				console.log("end date selected!");
-			}
-		});
-
-	start.tffCal("relateTo", end); //start 和 end 关联起来
-
-});
-
-/*
-                           _ooOoo_  
-                          o8888888o  
-                          88" . "88  
-                          (| -_- |)  
-                           O\ = /O  
-                       ____/`---'\____  
-                     .   ' \\| |// `.  
-                      / \\||| : |||// \  
-                    / _||||| -:- |||||- \  
-                      | | \\\ - /// | |  
-                    | \_| ''\---/'' | |  
-                     \ .-\__ `-` ___/-. /  
-                  ___`. .' /--.--\ `. . __  
-               ."" '< `.___\_<|>_/___.' >'"".  
-              | | : `- \`.;`\ _ /`;.`/ - ` : | |  
-                \ \ `-. \_ __\ /__ _/ .-` / /  
-        ======`-.____`-.___\_____/___.-`____.-'======  
-                           `=---='  
- 
-        .............................................  
-                 佛祖保佑             永无BUG 
-         佛曰:  
-                 写字楼里写字间，写字间里程序员；  
-                 程序人员写程序，又拿程序换酒钱。  
-                 酒醒只在网上坐，酒醉还来网下眠；  
-                 酒醉酒醒日复日，网上网下年复年。  
-                 但愿老死电脑间，不愿鞠躬老板前；  
-                 奔驰宝马贵者趣，公交自行程序员。  
-                 别人笑我忒疯癫，我笑自己命太贱；  
-                 不见满街漂亮妹，哪个归得程序员？ 
- */
+})(window.jQuery || require("jquery"));
