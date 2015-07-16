@@ -1,0 +1,173 @@
+@charset 'utf-8';
+
+.tff-cal {
+    width: 506px;
+    height: 262px;
+    border: 1px solid #c9c9c9;
+    z-index: 1;
+    position: absolute;
+    background: #fff;
+    display: none
+}
+
+.tff-cal .c-bar {
+    width: 100%;
+    top: 50%;
+    position: absolute
+}
+
+.tff-cal .c-bar .b-arrow {
+    width: 14px;
+    height: 22px;
+    line-height: 22px;
+    display: inline-block;
+    margin-top: -11px;
+    background: #ddd;
+    text-decoration: none;
+    text-align: center;
+    font-family: SimSun, 宋体
+}
+
+.tff-cal .c-bar .b-arrow:hover {
+    color: #fff;
+    background: #0090f2
+}
+
+.tff-cal .c-bar .b-prev {
+    float: left
+}
+
+.tff-cal .c-bar .b-next {
+    float: right
+}
+
+.tff-cal .c-box {
+    width: 476px;
+    margin: auto;
+    overflow: hidden;
+    position: relative;
+    z-index: 1
+}
+
+.tff-cal .c-wraper {
+    width: 600%
+}
+
+.tff-cal .c-month {
+    width: 218px;
+    margin: 0 10px;
+    float: left
+}
+
+.tff-cal .c-month .m-year {
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    font-size: 15px
+}
+
+.tff-cal .c-month .m-week {
+    overflow: hidden
+}
+
+.tff-cal .c-month .w-wkend {
+    color: #f60
+}
+
+.tff-cal .m-week .w-item {
+    width: 30px;
+    height: 25px;
+    padding-left: 1px;
+    line-height: 25px;
+    float: left;
+    text-align: center;
+    background: #fff
+}
+
+.tff-cal .m-day .d-item {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    margin-right: -1px;
+    margin-top: -1px;
+    border: 1px solid #eee;
+    float: left;
+    text-align: center;
+    cursor: pointer
+}
+
+.tff-cal .m-day .d-wraper {
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    border: 1px solid transparent;
+    margin-top: 1px
+}
+
+.tff-cal .m-day .d-focus {
+    background: #ffba13;
+    color: #fff
+}
+
+.tff-cal .m-day .d-selected,
+.tff-cal .m-day .d-item:hover,
+.tff-cal .m-day .d-hover {
+    background-color: #0090f2;
+    color: #fff
+}
+
+.tff-cal .m-day .d-selected .d-wraper {
+    border-color: transparent
+}
+
+.tff-cal .m-day .d-during .d-wraper {
+    border-color: #0090f2
+}
+
+.tff-cal .m-day .d-dis {
+    cursor: not-allowed !important;
+    color: #999 !important;
+    background: none !important;
+    border-color: #eee !important
+}
+
+.tff-cal .m-day .d-dis,
+.tff-cal .m-day .d-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none
+}
+
+.tff-cal .m-day .d-dis .d-wraper,
+.tff-cal .m-day .d-none .d-wraper {
+    border-color: transparent !important
+}
+
+.tff-cal .m-day .d-none {
+    cursor: default !important;
+    background: none !important
+}
+
+.tff-cal .c-op {
+    margin-left: 30px;
+    margin-top: 10px
+}
+
+.tff-cal .c-op .o-item {
+    width: 51px;
+    height: 22px;
+    margin-right: 5px;
+    line-height: 22px;
+    border: 1px solid #9e9e9e;
+    display: inline-block;
+    text-align: center
+}
+
+.tff-cal .c-op .o-item:hover {
+    text-decoration: none;
+    background-color: #0090f2;
+    border-color: #0090f2;
+    color: #fff
+}

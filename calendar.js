@@ -183,7 +183,7 @@
 				if (input.cfgs.__endTo) { //开始
 					startDate = startDate || input.cfgs.selectedDate;
 					endDate = endDate || input.cfgs.__endTo.cfgs.selectedDate;
-				} else { //结束
+				} else if (input.cfgs.__startFrom) { //结束
 					startDate = startDate || input.cfgs.__startFrom.cfgs.selectedDate;
 					endDate = endDate || input.cfgs.selectedDate;
 				}
