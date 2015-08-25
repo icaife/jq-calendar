@@ -1,10 +1,10 @@
 /**
  * @author Leon
  * @description 酒店日历控件V1.0
- * @date 2015 年6月26日
+ * @date 2015 年6月27日
  * @ps 全部月份统一成 0 开始， 只有format函数 出来是真实的月份， 即 月份从0开始 * 全局只有一个calendar
  */
-
+ 
 /*global $*/
 "use strict";
 (function() {
